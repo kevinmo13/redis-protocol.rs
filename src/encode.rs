@@ -114,6 +114,7 @@ fn gen_array<'a>(x: (&'a mut [u8], usize), data: &Vec<Frame>) -> Result<(&'a mut
       Frame::BulkString(ref b) => gen_bulkstring(x, &b)?,
       Frame::Null              => gen_null(x)?,
       Frame::Array(ref frames) => gen_array(x, frames)?,
+      Frame::Error(ref b)      => gen_error(x, b)?,
       _ => return Err(GenError::CustomError(1))
     };
   }
@@ -273,6 +274,19 @@ mod tests {
       Frame::BulkString(str_to_bytes("HSET")),
       Frame::BulkString(str_to_bytes("foo")),
       Frame::Null
+    ]);
+
+    encode_and_verify_empty(&input, expected);
+    encode_and_verify_non_empty(&input, expected);
+  }
+
+  #[test]
+  fn should_encode_array_various_types_test() {
+    let expected = "*3\r\n$5\r\nWATCH\r\n$6\r\nWIBBLE\r\n-SERVER_ERR error\r\n";
+    let input = Frame::Array(vec![
+      Frame::BulkString(str_to_bytes("WATCH")),
+      Frame::BulkString(str_to_bytes("WIBBLE")),
+      Frame::Error("SERVER_ERR error".into())
     ]);
 
     encode_and_verify_empty(&input, expected);
